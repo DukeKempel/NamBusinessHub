@@ -1,0 +1,1026 @@
+// Business Specials Hub - Main Application
+class BusinessSpecialsApp {
+    constructor() {
+        this.currentSpecial = null;
+        this.specials = [];
+        this.subscribers = [];
+        this.suppliers = [];
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadSpecials();
+        this.loadSubscribers();
+        this.loadSuppliers();
+        this.updateAnalytics();
+    }
+
+    setupEventListeners() {
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
+        });
+
+        // Form submission
+        document.getElementById('special-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createSpecial();
+        });
+
+        // Preview button
+        document.getElementById('preview-btn').addEventListener('click', () => {
+            this.previewSpecial();
+        });
+
+        // Notify all button
+        document.getElementById('notify-all-btn').addEventListener('click', () => {
+            this.notifyAllSubscribers();
+        });
+
+        // File upload
+        document.getElementById('photo').addEventListener('change', (e) => {
+            this.handlePhotoUpload(e);
+        });
+
+        // Modal close buttons
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                this.closeModals();
+            });
+        });
+
+        // Share buttons
+        document.querySelectorAll('.share-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.handleShare(e.target.closest('.share-btn'));
+            });
+        });
+
+        // Filters
+        document.getElementById('status-filter').addEventListener('change', () => {
+            this.filterSpecials();
+        });
+
+        document.getElementById('search-specials').addEventListener('input', () => {
+            this.filterSpecials();
+        });
+
+        // Subscriber actions
+        document.getElementById('export-subscribers').addEventListener('click', () => {
+            this.exportSubscribers();
+        });
+
+        document.getElementById('send-notification').addEventListener('click', () => {
+            this.openNotificationModal();
+        });
+
+        document.getElementById('notification-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.sendNotification();
+        });
+
+        document.getElementById('cancel-notification').addEventListener('click', () => {
+            this.closeModals();
+        });
+
+        // Supplier actions
+        document.getElementById('add-supplier').addEventListener('click', () => {
+            this.openSupplierModal();
+        });
+
+        document.getElementById('export-suppliers').addEventListener('click', () => {
+            this.exportSuppliers();
+        });
+
+        document.getElementById('supplier-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addSupplier();
+        });
+
+        document.getElementById('cancel-supplier').addEventListener('click', () => {
+            this.closeModals();
+        });
+
+        document.getElementById('rate-supplier-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.rateSupplier();
+        });
+
+        document.getElementById('cancel-rating').addEventListener('click', () => {
+            this.closeModals();
+        });
+
+        // Supplier filters
+        document.getElementById('supplier-category-filter').addEventListener('change', () => {
+            this.filterSuppliers();
+        });
+
+        document.getElementById('supplier-rating-filter').addEventListener('change', () => {
+            this.filterSuppliers();
+        });
+
+        document.getElementById('search-suppliers').addEventListener('input', () => {
+            this.filterSuppliers();
+        });
+
+        // Category dropdown
+        document.getElementById('categories-dropdown').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleCategoryDropdown();
+        });
+
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const category = e.currentTarget.getAttribute('data-category');
+                this.selectCategory(category);
+            });
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                this.closeModals();
+            }
+        });
+    }
+
+    switchTab(tabName) {
+        // Update navigation buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        // Load data for specific tabs
+        if (tabName === 'analytics') {
+            this.updateAnalytics();
+        } else if (tabName === 'subscribers') {
+            this.loadSubscribers();
+        } else if (tabName === 'suppliers') {
+            this.loadSuppliers();
+        }
+    }
+
+    async createSpecial() {
+        this.showLoading();
+
+        try {
+            const formData = new FormData(document.getElementById('special-form'));
+            const specialData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                price: formData.get('price'),
+                category: formData.get('category'),
+                expiry: formData.get('expiry') ? new Date(formData.get('expiry')).toISOString() : null,
+                createdAt: new Date().toISOString(),
+                views: 0,
+                shares: 0,
+                status: 'active'
+            };
+
+            // Upload photo if selected
+            const photoFile = formData.get('photo');
+            if (photoFile && photoFile.size > 0) {
+                const photoUrl = await this.uploadPhoto(photoFile);
+                specialData.photoUrl = photoUrl;
+            }
+
+            // Save to Firestore
+            const docRef = await db.collection('specials').add(specialData);
+            specialData.id = docRef.id;
+
+            // Add to local array
+            this.specials.push(specialData);
+
+            // Reset form
+            document.getElementById('special-form').reset();
+            document.getElementById('photo-preview').innerHTML = '';
+
+            this.showSuccess('Special created successfully!');
+            this.switchTab('manage');
+
+        } catch (error) {
+            console.error('Error creating special:', error);
+            this.showError('Failed to create special. Please try again.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async uploadPhoto(file) {
+        const storageRef = storage.ref();
+        const photoRef = storageRef.child(`specials/${Date.now()}_${file.name}`);
+        const snapshot = await photoRef.put(file);
+        return await snapshot.ref.getDownloadURL();
+    }
+
+    handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('photo-preview').innerHTML = 
+                    `<img src="${e.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    previewSpecial() {
+        const formData = new FormData(document.getElementById('special-form'));
+        
+        if (!formData.get('title') || !formData.get('description')) {
+            this.showError('Please fill in the title and description to preview.');
+            return;
+        }
+
+        const previewData = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            price: formData.get('price'),
+            category: formData.get('category'),
+            photoUrl: document.querySelector('#photo-preview img')?.src
+        };
+
+        this.currentSpecial = previewData;
+        this.showPreviewModal();
+    }
+
+    showPreviewModal() {
+        const modal = document.getElementById('preview-modal');
+        const content = document.getElementById('preview-content');
+
+        content.innerHTML = `
+            <h3>${this.currentSpecial.title}</h3>
+            <p>${this.currentSpecial.description}</p>
+            ${this.currentSpecial.price ? `<div class="price">${this.currentSpecial.price}</div>` : ''}
+            ${this.currentSpecial.photoUrl ? `<img src="${this.currentSpecial.photoUrl}" style="max-width: 200px; border-radius: 10px; margin-top: 15px;">` : ''}
+        `;
+
+        modal.style.display = 'block';
+    }
+
+    async handleShare(shareBtn) {
+        if (!this.currentSpecial) return;
+
+        const specialData = this.currentSpecial;
+        const shareText = `${specialData.title}\n\n${specialData.description}${specialData.price ? `\n\nPrice: ${specialData.price}` : ''}`;
+
+        if (shareBtn.classList.contains('whatsapp')) {
+            window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`);
+        } else if (shareBtn.classList.contains('facebook')) {
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareText)}`);
+        } else if (shareBtn.classList.contains('instagram')) {
+            this.downloadImage();
+        } else if (shareBtn.classList.contains('download')) {
+            this.downloadImage();
+        }
+    }
+
+    async downloadImage() {
+        if (!this.currentSpecial) return;
+
+        try {
+            const previewContent = document.getElementById('preview-content');
+            const canvas = await html2canvas(previewContent, {
+                backgroundColor: null,
+                scale: 2
+            });
+
+            const link = document.createElement('a');
+            link.download = `${this.currentSpecial.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        } catch (error) {
+            console.error('Error generating image:', error);
+            this.showError('Failed to generate image. Please try again.');
+        }
+    }
+
+    async loadSpecials() {
+        try {
+            const snapshot = await db.collection('specials').orderBy('createdAt', 'desc').get();
+            this.specials = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.renderSpecials();
+        } catch (error) {
+            console.error('Error loading specials:', error);
+            this.showError('Failed to load specials.');
+        }
+    }
+
+    renderSpecials() {
+        const container = document.getElementById('specials-list');
+        const statusFilter = document.getElementById('status-filter').value;
+        const searchTerm = document.getElementById('search-specials').value.toLowerCase();
+
+        let filteredSpecials = this.specials;
+
+        // Apply status filter
+        if (statusFilter !== 'all') {
+            filteredSpecials = filteredSpecials.filter(special => {
+                if (statusFilter === 'active') {
+                    return special.status === 'active' && (!special.expiry || new Date(special.expiry) > new Date());
+                } else if (statusFilter === 'expired') {
+                    return special.status === 'expired' || (special.expiry && new Date(special.expiry) <= new Date());
+                }
+                return true;
+            });
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+            filteredSpecials = filteredSpecials.filter(special =>
+                special.title.toLowerCase().includes(searchTerm) ||
+                special.description.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        container.innerHTML = filteredSpecials.map(special => `
+            <div class="special-card">
+                <div class="special-header">
+                    <div>
+                        <div class="special-title">${special.title}</div>
+                        <span class="special-category">${this.getCategoryName(special.category)}</span>
+                    </div>
+                    <span class="status-badge ${this.getStatusClass(special)}">${this.getStatusText(special)}</span>
+                </div>
+                <div class="special-description">${special.description}</div>
+                ${special.price ? `<div style="margin-bottom: 15px;"><strong>Price:</strong> ${special.price}</div>` : ''}
+                ${special.photoUrl ? `<img src="${special.photoUrl}" style="max-width: 150px; border-radius: 8px; margin-bottom: 15px;">` : ''}
+                <div class="special-meta">
+                    <span>Created: ${new Date(special.createdAt).toLocaleDateString()}</span>
+                    <span>Views: ${special.views || 0} | Shares: ${special.shares || 0}</span>
+                </div>
+                <div class="special-actions">
+                    <button class="btn btn-primary" onclick="app.editSpecial('${special.id}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.shareSpecial('${special.id}')">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.deleteSpecial('${special.id}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    getCategoryName(category) {
+        const categories = {
+            food: 'Food & Beverage',
+            tourism: 'Tourism & Hospitality',
+            retail: 'Retail & Shopping',
+            service: 'Services',
+            agriculture: 'Agriculture & Farming',
+            mining: 'Mining & Resources',
+            event: 'Events & Entertainment',
+            other: 'Other'
+        };
+        return categories[category] || category;
+    }
+
+    getStatusClass(special) {
+        if (special.status === 'expired' || (special.expiry && new Date(special.expiry) <= new Date())) {
+            return 'status-expired';
+        }
+        return 'status-active';
+    }
+
+    getStatusText(special) {
+        if (special.status === 'expired' || (special.expiry && new Date(special.expiry) <= new Date())) {
+            return 'Expired';
+        }
+        return 'Active';
+    }
+
+    filterSpecials() {
+        this.renderSpecials();
+    }
+
+    async editSpecial(specialId) {
+        const special = this.specials.find(s => s.id === specialId);
+        if (!special) return;
+
+        // Populate form with special data
+        document.getElementById('title').value = special.title;
+        document.getElementById('description').value = special.description;
+        document.getElementById('price').value = special.price || '';
+        document.getElementById('category').value = special.category;
+        if (special.expiry) {
+            document.getElementById('expiry').value = special.expiry.slice(0, 16);
+        }
+
+        if (special.photoUrl) {
+            document.getElementById('photo-preview').innerHTML = 
+                `<img src="${special.photoUrl}" alt="Preview">`;
+        }
+
+        this.currentSpecial = special;
+        this.switchTab('create');
+    }
+
+    async shareSpecial(specialId) {
+        const special = this.specials.find(s => s.id === specialId);
+        if (!special) return;
+
+        this.currentSpecial = special;
+        this.showPreviewModal();
+
+        // Increment share count
+        await this.incrementShareCount(specialId);
+    }
+
+    async deleteSpecial(specialId) {
+        if (!confirm('Are you sure you want to delete this special?')) return;
+
+        try {
+            await db.collection('specials').doc(specialId).delete();
+            this.specials = this.specials.filter(s => s.id !== specialId);
+            this.renderSpecials();
+            this.showSuccess('Special deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting special:', error);
+            this.showError('Failed to delete special.');
+        }
+    }
+
+    async incrementShareCount(specialId) {
+        try {
+            const specialRef = db.collection('specials').doc(specialId);
+            await specialRef.update({
+                shares: firebase.firestore.FieldValue.increment(1)
+            });
+
+            // Update local data
+            const special = this.specials.find(s => s.id === specialId);
+            if (special) {
+                special.shares = (special.shares || 0) + 1;
+            }
+        } catch (error) {
+            console.error('Error incrementing share count:', error);
+        }
+    }
+
+    async loadSubscribers() {
+        try {
+            const snapshot = await db.collection('subscribers').get();
+            this.subscribers = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.renderSubscribers();
+        } catch (error) {
+            console.error('Error loading subscribers:', error);
+        }
+    }
+
+    renderSubscribers() {
+        const container = document.getElementById('subscribers-list');
+        container.innerHTML = this.subscribers.map(subscriber => `
+            <div class="subscriber-card">
+                <div class="subscriber-info">
+                    <div class="subscriber-avatar">
+                        ${subscriber.email.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div><strong>${subscriber.email}</strong></div>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            Subscribed: ${new Date(subscriber.subscribedAt).toLocaleDateString()}
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="app.removeSubscriber('${subscriber.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    async removeSubscriber(subscriberId) {
+        if (!confirm('Are you sure you want to remove this subscriber?')) return;
+
+        try {
+            await db.collection('subscribers').doc(subscriberId).delete();
+            this.subscribers = this.subscribers.filter(s => s.id !== subscriberId);
+            this.renderSubscribers();
+            this.showSuccess('Subscriber removed successfully!');
+        } catch (error) {
+            console.error('Error removing subscriber:', error);
+            this.showError('Failed to remove subscriber.');
+        }
+    }
+
+    exportSubscribers() {
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + "Email,Subscribed Date\n"
+            + this.subscribers.map(s => `${s.email},${new Date(s.subscribedAt).toLocaleDateString()}`).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "subscribers.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    openNotificationModal() {
+        document.getElementById('notification-modal').style.display = 'block';
+    }
+
+    async sendNotification() {
+        const title = document.getElementById('notification-title').value;
+        const message = document.getElementById('notification-message').value;
+
+        if (!title || !message) {
+            this.showError('Please fill in both title and message.');
+            return;
+        }
+
+        this.showLoading();
+
+        try {
+            // Save notification to Firestore
+            await db.collection('notifications').add({
+                title,
+                message,
+                sentAt: new Date().toISOString(),
+                recipientCount: this.subscribers.length
+            });
+
+            this.showSuccess(`Notification sent to ${this.subscribers.length} subscribers!`);
+            this.closeModals();
+            document.getElementById('notification-form').reset();
+
+        } catch (error) {
+            console.error('Error sending notification:', error);
+            this.showError('Failed to send notification.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async updateAnalytics() {
+        try {
+            // Calculate analytics from local data
+            const totalViews = this.specials.reduce((sum, special) => sum + (special.views || 0), 0);
+            const totalShares = this.specials.reduce((sum, special) => sum + (special.shares || 0), 0);
+            const totalSubscribers = this.subscribers.length;
+            const activeSpecials = this.specials.filter(special => 
+                special.status === 'active' && (!special.expiry || new Date(special.expiry) > new Date())
+            ).length;
+
+            // Update UI
+            document.getElementById('total-views').textContent = totalViews;
+            document.getElementById('total-shares').textContent = totalShares;
+            document.getElementById('total-subscribers').textContent = totalSubscribers;
+            document.getElementById('active-specials').textContent = activeSpecials;
+
+            // Update chart
+            this.updateChart();
+
+        } catch (error) {
+            console.error('Error updating analytics:', error);
+        }
+    }
+
+    updateChart() {
+        const ctx = document.getElementById('views-chart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (window.viewsChart) {
+            window.viewsChart.destroy();
+        }
+
+        // Prepare data for last 7 days
+        const last7Days = [];
+        const viewData = [];
+        const shareData = [];
+
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            last7Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            
+            // For demo purposes, generate random data
+            viewData.push(Math.floor(Math.random() * 50) + 10);
+            shareData.push(Math.floor(Math.random() * 20) + 5);
+        }
+
+        window.viewsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days,
+                datasets: [{
+                    label: 'Views',
+                    data: viewData,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Shares',
+                    data: shareData,
+                    borderColor: '#764ba2',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Views and Shares (Last 7 Days)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    closeModals() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+    }
+
+    showLoading() {
+        document.getElementById('loading').style.display = 'flex';
+    }
+
+    hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+
+    showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+        `;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
+    // Supplier Management Functions
+    async loadSuppliers() {
+        try {
+            const snapshot = await db.collection('suppliers').orderBy('createdAt', 'desc').get();
+            this.suppliers = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.renderSuppliers();
+        } catch (error) {
+            console.error('Error loading suppliers:', error);
+        }
+    }
+
+    renderSuppliers() {
+        const container = document.getElementById('suppliers-list');
+        const categoryFilter = document.getElementById('supplier-category-filter').value;
+        const ratingFilter = document.getElementById('supplier-rating-filter').value;
+        const searchTerm = document.getElementById('search-suppliers').value.toLowerCase();
+
+        let filteredSuppliers = this.suppliers;
+
+        // Apply category filter
+        if (categoryFilter !== 'all') {
+            filteredSuppliers = filteredSuppliers.filter(supplier => supplier.category === categoryFilter);
+        }
+
+        // Apply rating filter
+        if (ratingFilter !== 'all') {
+            const minRating = parseInt(ratingFilter);
+            filteredSuppliers = filteredSuppliers.filter(supplier => supplier.rating >= minRating);
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+            filteredSuppliers = filteredSuppliers.filter(supplier =>
+                supplier.name.toLowerCase().includes(searchTerm) ||
+                supplier.description.toLowerCase().includes(searchTerm) ||
+                supplier.location.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        container.innerHTML = filteredSuppliers.map(supplier => `
+            <div class="supplier-card">
+                <div class="supplier-header">
+                    <div>
+                        <div class="supplier-name">${supplier.name}</div>
+                        <span class="supplier-category">${this.getCategoryName(supplier.category)}</span>
+                    </div>
+                </div>
+                <div class="supplier-description">${supplier.description}</div>
+                <div class="supplier-contact">
+                    ${supplier.phone ? `<div class="supplier-contact-item"><i class="fas fa-phone"></i> ${supplier.phone}</div>` : ''}
+                    ${supplier.email ? `<div class="supplier-contact-item"><i class="fas fa-envelope"></i> ${supplier.email}</div>` : ''}
+                    ${supplier.location ? `<div class="supplier-contact-item"><i class="fas fa-map-marker-alt"></i> ${supplier.location}</div>` : ''}
+                    ${supplier.website ? `<div class="supplier-contact-item"><i class="fas fa-globe"></i> <a href="${supplier.website}" target="_blank">Website</a></div>` : ''}
+                </div>
+                <div class="supplier-rating">
+                    <div class="rating-stars">
+                        ${this.generateStars(supplier.rating)}
+                    </div>
+                    <span class="rating-count">${supplier.rating} (${supplier.ratingCount} reviews)</span>
+                </div>
+                <div class="supplier-actions-buttons">
+                    <button class="btn btn-primary" onclick="app.rateSupplierModal('${supplier.id}')">
+                        <i class="fas fa-star"></i> Rate
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.viewSupplierDetails('${supplier.id}')">
+                        <i class="fas fa-eye"></i> Details
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.removeSupplier('${supplier.id}')">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    generateStars(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 !== 0;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+        let stars = '';
+        for (let i = 0; i < fullStars; i++) {
+            stars += '<span class="star">★</span>';
+        }
+        if (hasHalfStar) {
+            stars += '<span class="star">☆</span>';
+        }
+        for (let i = 0; i < emptyStars; i++) {
+            stars += '<span class="star empty">★</span>';
+        }
+        return stars;
+    }
+
+    openSupplierModal() {
+        document.getElementById('supplier-modal').style.display = 'block';
+    }
+
+    async addSupplier() {
+        this.showLoading();
+
+        try {
+            const formData = new FormData(document.getElementById('supplier-form'));
+            const supplierData = {
+                name: formData.get('supplier-name'),
+                category: formData.get('supplier-category'),
+                description: formData.get('supplier-description'),
+                phone: formData.get('supplier-phone'),
+                email: formData.get('supplier-email'),
+                location: formData.get('supplier-location'),
+                website: formData.get('supplier-website'),
+                rating: 0,
+                ratingCount: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            const docRef = await db.collection('suppliers').add(supplierData);
+            supplierData.id = docRef.id;
+
+            this.suppliers.push(supplierData);
+            this.renderSuppliers();
+            this.closeModals();
+            document.getElementById('supplier-form').reset();
+            this.showSuccess('Supplier added successfully!');
+
+        } catch (error) {
+            console.error('Error adding supplier:', error);
+            this.showError('Failed to add supplier. Please try again.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    exportSuppliers() {
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + "Company Name,Category,Description,Phone,Email,Location,Website,Rating,Rating Count\n"
+            + this.suppliers.map(s => `${s.name},${this.getCategoryName(s.category)},${s.description},${s.phone || ''},${s.email || ''},${s.location || ''},${s.website || ''},${s.rating},${s.ratingCount}`).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "suppliers.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    filterSuppliers() {
+        this.renderSuppliers();
+    }
+
+    rateSupplierModal(supplierId) {
+        this.currentSupplierId = supplierId;
+        document.getElementById('rate-supplier-modal').style.display = 'block';
+    }
+
+    async rateSupplier() {
+        const rating = parseInt(document.querySelector('input[name="rating"]:checked').value);
+        const comment = document.getElementById('rating-comment').value;
+
+        this.showLoading();
+
+        try {
+            const supplier = this.suppliers.find(s => s.id === this.currentSupplierId);
+            if (supplier) {
+                // Update rating (simple average)
+                const newRatingCount = supplier.ratingCount + 1;
+                const newRating = ((supplier.rating * supplier.ratingCount) + rating) / newRatingCount;
+                
+                const updatedRating = Math.round(newRating * 10) / 10; // Round to 1 decimal
+
+                // Update in Firestore
+                await db.collection('suppliers').doc(supplier.id).update({
+                    rating: updatedRating,
+                    ratingCount: newRatingCount
+                });
+
+                // Update local data
+                supplier.rating = updatedRating;
+                supplier.ratingCount = newRatingCount;
+            }
+
+            this.renderSuppliers();
+            this.closeModals();
+            document.getElementById('rate-supplier-form').reset();
+            this.showSuccess('Rating submitted successfully!');
+
+        } catch (error) {
+            console.error('Error rating supplier:', error);
+            this.showError('Failed to submit rating. Please try again.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    viewSupplierDetails(supplierId) {
+        const supplier = this.suppliers.find(s => s.id === supplierId);
+        if (supplier) {
+            alert(`Supplier Details:\n\nName: ${supplier.name}\nCategory: ${this.getCategoryName(supplier.category)}\nDescription: ${supplier.description}\nPhone: ${supplier.phone || 'N/A'}\nEmail: ${supplier.email || 'N/A'}\nLocation: ${supplier.location || 'N/A'}\nWebsite: ${supplier.website || 'N/A'}\nRating: ${supplier.rating}/5 (${supplier.ratingCount} reviews)`);
+        }
+    }
+
+    async removeSupplier(supplierId) {
+        if (!confirm('Are you sure you want to remove this supplier?')) return;
+
+        try {
+            await db.collection('suppliers').doc(supplierId).delete();
+            this.suppliers = this.suppliers.filter(s => s.id !== supplierId);
+            this.renderSuppliers();
+            this.showSuccess('Supplier removed successfully!');
+        } catch (error) {
+            console.error('Error removing supplier:', error);
+            this.showError('Failed to remove supplier.');
+        }
+    }
+
+    // Notify All Subscribers
+    async notifyAllSubscribers() {
+        const formData = new FormData(document.getElementById('special-form'));
+        const title = formData.get('title');
+        const description = formData.get('description');
+        const price = formData.get('price');
+        const category = formData.get('category');
+
+        if (!title || !description) {
+            this.showError('Please fill in the title and description before notifying subscribers.');
+            return;
+        }
+
+        if (this.subscribers.length === 0) {
+            this.showError('No subscribers to notify. Add some subscribers first!');
+            return;
+        }
+
+        this.showLoading();
+
+        try {
+            const message = `🎉 New Special Alert!\n\n${title}\n\n${description}\n\nPrice: ${price || 'Contact for pricing'}\nCategory: ${this.getCategoryName(category)}\n\nCheck it out now!`;
+
+            // Send notification to all subscribers
+            const notificationData = {
+                title: 'New Special Available!',
+                message: message,
+                timestamp: new Date().toISOString(),
+                sentTo: this.subscribers.length
+            };
+
+            await db.collection('notifications').add(notificationData);
+
+            this.showSuccess(`Notification sent to ${this.subscribers.length} subscribers!`);
+            
+            // Update analytics
+            this.updateAnalytics();
+        } catch (error) {
+            console.error('Error sending notifications:', error);
+            this.showError('Failed to send notifications. Please try again.');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // Category Dropdown Functions
+    toggleCategoryDropdown() {
+        const dropdown = document.getElementById('categories-menu');
+        dropdown.classList.toggle('show');
+    }
+
+    async selectCategory(category) {
+        const dropdown = document.getElementById('categories-menu');
+        dropdown.classList.remove('show');
+        
+        if (category === 'all') {
+            await this.loadSpecials();
+            this.showSuccess('Showing all categories');
+        } else {
+            try {
+                const snapshot = await db.collection('specials')
+                    .where('category', '==', category)
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                
+                this.specials = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                this.renderSpecials();
+                this.showSuccess(`Showing ${this.getCategoryName(category)} specials`);
+            } catch (error) {
+                console.error('Error filtering by category:', error);
+                this.showError('Failed to filter specials by category.');
+            }
+        }
+    }
+}
+
+// Add CSS animations for notifications
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new BusinessSpecialsApp();
+}); 

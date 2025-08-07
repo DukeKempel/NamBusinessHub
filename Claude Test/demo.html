@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Namibian Business Specials Hub - Demo</title>
+                <link rel="stylesheet" href="styles.css">
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+            </head>
+            <body>
+                <div class="container">
+                    <!-- Header -->
+                    <header class="header">
+                        <div class="header-content">
+                            <h1><i class="fas fa-store"></i> Namibian Business Specials Hub</h1>
+                            <p>Create, share, and track your daily specials with ease - Made for Namibian businesses</p>
+                            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; margin-top: 20px;">
+                                <strong>Demo Mode</strong> - This is a demonstration version. No data is saved.
+                            </div>
+                        </div>
+                    </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <button class="nav-btn active" data-tab="create">
+                <i class="fas fa-plus"></i> Create Special
+            </button>
+            <button class="nav-btn" data-tab="manage">
+                <i class="fas fa-list"></i> Manage Specials
+            </button>
+            <button class="nav-btn" data-tab="analytics">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </button>
+            <button class="nav-btn" data-tab="subscribers">
+                <i class="fas fa-users"></i> Subscribers
+            </button>
+            <button class="nav-btn" data-tab="suppliers">
+                <i class="fas fa-truck"></i> Suppliers
+            </button>
+            <div class="nav-dropdown">
+                <button class="nav-btn dropdown-toggle" id="categories-dropdown">
+                    <i class="fas fa-th-large"></i> Categories <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu" id="categories-menu">
+                    <a href="#" class="dropdown-item" data-category="all">
+                        <i class="fas fa-th"></i> All Categories
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="food">
+                        <i class="fas fa-utensils"></i> Food & Beverage
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="tourism">
+                        <i class="fas fa-plane"></i> Tourism & Hospitality
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="retail">
+                        <i class="fas fa-shopping-cart"></i> Retail & Shopping
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="service">
+                        <i class="fas fa-tools"></i> Services
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="agriculture">
+                        <i class="fas fa-seedling"></i> Agriculture & Farming
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="mining">
+                        <i class="fas fa-hammer"></i> Mining & Resources
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="transport">
+                        <i class="fas fa-truck"></i> Transport & Logistics
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="construction">
+                        <i class="fas fa-hard-hat"></i> Construction
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="event">
+                        <i class="fas fa-calendar-alt"></i> Events & Entertainment
+                    </a>
+                    <a href="#" class="dropdown-item" data-category="other">
+                        <i class="fas fa-ellipsis-h"></i> Other
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Create Special Tab -->
+            <div class="tab-content active" id="create-tab">
+                <div class="card">
+                    <h2><i class="fas fa-plus-circle"></i> Create New Special</h2>
+                    <form id="special-form" class="special-form">
+                        <div class="form-group">
+                            <label for="title">Special Title *</label>
+                            <input type="text" id="title" name="title" required placeholder="e.g., 50% Off Pizza Tuesday">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description">Description *</label>
+                            <textarea id="description" name="description" required placeholder="Describe your special offer..."></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="price">Price (N$)</label>
+                                <input type="text" id="price" name="price" placeholder="e.g., N$ 99.99 or Free">
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Category</label>
+                                <select id="category" name="category">
+                                    <option value="food">Food & Beverage</option>
+                                    <option value="tourism">Tourism & Hospitality</option>
+                                    <option value="retail">Retail & Shopping</option>
+                                    <option value="service">Services</option>
+                                    <option value="agriculture">Agriculture & Farming</option>
+                                    <option value="mining">Mining & Resources</option>
+                                    <option value="event">Events & Entertainment</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="photo">Upload Photo</label>
+                            <div class="file-upload">
+                                <input type="file" id="photo" name="photo" accept="image/*">
+                                <label for="photo" class="file-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Choose a photo or drag it here</span>
+                                </label>
+                            </div>
+                            <div id="photo-preview" class="photo-preview"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="expiry">Valid Until</label>
+                            <input type="datetime-local" id="expiry" name="expiry">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Special
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="preview-btn">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                            <button type="button" class="btn btn-success" id="notify-all-btn">
+                                <i class="fas fa-bell"></i> Notify All
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Manage Specials Tab -->
+            <div class="tab-content" id="manage-tab">
+                <div class="card">
+                    <h2><i class="fas fa-list"></i> Manage Specials</h2>
+                    <div class="filters">
+                        <select id="status-filter">
+                            <option value="all">All Specials</option>
+                            <option value="active">Active</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                        <input type="text" id="search-specials" placeholder="Search specials...">
+                    </div>
+                    <div id="specials-list" class="specials-list">
+                        <!-- Demo specials will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analytics-tab">
+                <div class="card">
+                    <h2><i class="fas fa-chart-bar"></i> Analytics Overview</h2>
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <div class="analytics-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="analytics-content">
+                                <h3 id="total-views">156</h3>
+                                <p>Total Views</p>
+                            </div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-icon">
+                                <i class="fas fa-share"></i>
+                            </div>
+                            <div class="analytics-content">
+                                <h3 id="total-shares">42</h3>
+                                <p>Total Shares</p>
+                            </div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="analytics-content">
+                                <h3 id="total-subscribers">89</h3>
+                                <p>Subscribers</p>
+                            </div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-icon">
+                                <i class="fas fa-calendar"></i>
+                            </div>
+                            <div class="analytics-content">
+                                <h3 id="active-specials">3</h3>
+                                <p>Active Specials</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="views-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscribers Tab -->
+            <div class="tab-content" id="subscribers-tab">
+                <div class="card">
+                    <h2><i class="fas fa-users"></i> Manage Subscribers</h2>
+                    <div class="subscriber-actions">
+                        <button class="btn btn-primary" id="export-subscribers">
+                            <i class="fas fa-download"></i> Export List
+                        </button>
+                        <button class="btn btn-secondary" id="send-notification">
+                            <i class="fas fa-bell"></i> Send Notification
+                        </button>
+                    </div>
+                    <div id="subscribers-list" class="subscribers-list">
+                        <!-- Demo subscribers will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suppliers Tab -->
+            <div class="tab-content" id="suppliers-tab">
+                <div class="card">
+                    <h2><i class="fas fa-truck"></i> Supplier Directory</h2>
+                    <div class="supplier-actions">
+                        <button class="btn btn-primary" id="add-supplier">
+                            <i class="fas fa-plus"></i> Add Supplier
+                        </button>
+                        <button class="btn btn-secondary" id="export-suppliers">
+                            <i class="fas fa-download"></i> Export List
+                        </button>
+                    </div>
+                    <div class="filters">
+                        <select id="supplier-category-filter">
+                            <option value="all">All Categories</option>
+                            <option value="food">Food & Beverage</option>
+                            <option value="tourism">Tourism & Hospitality</option>
+                            <option value="retail">Retail & Shopping</option>
+                            <option value="service">Services</option>
+                            <option value="agriculture">Agriculture & Farming</option>
+                            <option value="mining">Mining & Resources</option>
+                            <option value="transport">Transport & Logistics</option>
+                            <option value="construction">Construction</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select id="supplier-rating-filter">
+                            <option value="all">All Ratings</option>
+                            <option value="5">5 Stars</option>
+                            <option value="4">4+ Stars</option>
+                            <option value="3">3+ Stars</option>
+                        </select>
+                        <input type="text" id="search-suppliers" placeholder="Search suppliers...">
+                    </div>
+                    <div id="suppliers-list" class="suppliers-list">
+                        <!-- Demo suppliers will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Preview -->
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Special Preview</h2>
+            <div id="preview-content" class="preview-content">
+                <!-- Preview content will be generated here -->
+            </div>
+            <div class="share-buttons">
+                <button class="share-btn whatsapp">
+                    <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                </button>
+                <button class="share-btn facebook">
+                    <i class="fab fa-facebook"></i> Share on Facebook
+                </button>
+                <button class="share-btn instagram">
+                    <i class="fab fa-instagram"></i> Share on Instagram
+                </button>
+                <button class="share-btn download">
+                    <i class="fas fa-download"></i> Download Image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Send Notification to Subscribers</h2>
+            <form id="notification-form">
+                <div class="form-group">
+                    <label for="notification-title">Title</label>
+                    <input type="text" id="notification-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="notification-message">Message</label>
+                    <textarea id="notification-message" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Send Notification</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-notification">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Supplier Modal -->
+    <div id="supplier-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Supplier</h2>
+            <form id="supplier-form">
+                <div class="form-group">
+                    <label for="supplier-name">Company Name *</label>
+                    <input type="text" id="supplier-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="supplier-category">Category *</label>
+                    <select id="supplier-category" required>
+                        <option value="">Select Category</option>
+                        <option value="food">Food & Beverage</option>
+                        <option value="tourism">Tourism & Hospitality</option>
+                        <option value="retail">Retail & Shopping</option>
+                        <option value="service">Services</option>
+                        <option value="agriculture">Agriculture & Farming</option>
+                        <option value="mining">Mining & Resources</option>
+                        <option value="transport">Transport & Logistics</option>
+                        <option value="construction">Construction</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="supplier-description">Description</label>
+                    <textarea id="supplier-description" placeholder="Brief description of services/products..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="supplier-phone">Phone</label>
+                        <input type="tel" id="supplier-phone" placeholder="+264 61 123 4567">
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier-email">Email</label>
+                        <input type="email" id="supplier-email" placeholder="contact@company.na">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="supplier-location">Location</label>
+                    <input type="text" id="supplier-location" placeholder="e.g., Windhoek, Namibia">
+                </div>
+                <div class="form-group">
+                    <label for="supplier-website">Website</label>
+                    <input type="url" id="supplier-website" placeholder="https://www.company.na">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Add Supplier</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-supplier">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rate Supplier Modal -->
+    <div id="rate-supplier-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Rate Supplier</h2>
+            <form id="rate-supplier-form">
+                <div class="form-group">
+                    <label>Rating *</label>
+                    <div class="rating-input">
+                        <input type="radio" name="rating" value="5" id="star5">
+                        <label for="star5">★</label>
+                        <input type="radio" name="rating" value="4" id="star4">
+                        <label for="star4">★</label>
+                        <input type="radio" name="rating" value="3" id="star3">
+                        <label for="star3">★</label>
+                        <input type="radio" name="rating" value="2" id="star2">
+                        <label for="star2">★</label>
+                        <input type="radio" name="rating" value="1" id="star1">
+                        <label for="star1">★</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="rating-comment">Comment</label>
+                    <textarea id="rating-comment" placeholder="Share your experience with this supplier..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Submit Rating</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-rating">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- HTML2Canvas for image generation -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
+    <!-- Demo Scripts -->
+    <script src="demo.js"></script>
+</body>
+</html> 
